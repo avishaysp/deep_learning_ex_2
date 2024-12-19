@@ -25,7 +25,10 @@ def main():
     val_dataset = PTBDataset(valid_data, word2vec_model)
 
     def collate_fn(batch):
-        return pad_sequence(batch, batch_first=True, padding_value=pad_idx)
+        embeddings, indices = zip(*batch)
+        padded_embeddings = pad_sequence(embeddings, batch_first=True, padding_value=0)
+        padded_indices = pad_sequence(indices, batch_first=True, padding_value=pad_idx)
+        return padded_embeddings, padded_indices
 
     train_loader = DataLoader(
         train_dataset, batch_size=BATCH_SIZE, shuffle=True, collate_fn=collate_fn
@@ -53,18 +56,17 @@ def main():
         model.train()
         epoch_train_loss = 0
 
-        for batch in train_loader:
+        for batch_embeddings, batch_indices in train_loader:
             optimizer.zero_grad()
-            inputs = pad_sequence(batch, batch_first=True,
-                                  padding_value=pad_idx)
-            print(f"inputs shape after padding before flatten: {inputs.shape}")
-            targets = inputs[:, 1:]
-            inputs = inputs[:, :-1]
+            
+            inputs = batch_embeddings[:, :-1, :]  # Current words embeddings
+            targets = batch_indices[:, 1:]  # Next words indices
+            
             outputs = model(inputs)
-            outputs = outputs.view(-1, outputs.size(-1))
-            targets = targets.contiguous().view(-1)
-            print(f"outputs shape: {outputs.shape}")
-            print(f"targets shape: {targets.shape}")
+            batch_size, seq_len, vocab_size = outputs.shape
+            outputs = outputs.reshape(-1, vocab_size)
+            targets = targets.reshape(-1)
+            
             loss = criterion(outputs, targets)
             loss.backward()
             optimizer.step()
@@ -78,14 +80,15 @@ def main():
         epoch_val_loss = 0
 
         with torch.no_grad():
-            for batch in val_loader:
-                inputs = pad_sequence(batch, batch_first=True,
-                                      padding_value=pad_idx)
-                targets = inputs[:, 1:]
-                targets = targets.contiguous().view(-1)
-                inputs = inputs[:, :-1]
+            for batch_embeddings, batch_indices in val_loader:
+                inputs = batch_embeddings[:, :-1, :]
+                targets = batch_indices[:, 1:]
+                
                 outputs = model(inputs)
-                outputs = outputs.view(-1, outputs.size(-1))
+                batch_size, seq_len, vocab_size = outputs.shape
+                outputs = outputs.reshape(-1, vocab_size)
+                targets = targets.reshape(-1)
+                
                 loss = criterion(outputs, targets)
                 epoch_val_loss += loss.item()
 
