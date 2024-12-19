@@ -19,6 +19,14 @@ def compute_perplexity(loss):
 
 
 def main():
+    # Set up device
+    device = (
+        torch.device("mps")
+        if torch.backends.mps.is_available()
+        else torch.device("cpu")
+    )
+    print(f"Using device: {device}")
+
     train_data, valid_data = load_all_data(Path(Path.cwd()) / "PTB")
     word2vec_model, pad_idx = init_n_train_word2vec_model(train_data)
     train_dataset = PTBDataset(train_data, word2vec_model)
@@ -28,7 +36,7 @@ def main():
         embeddings, indices = zip(*batch)
         padded_embeddings = pad_sequence(embeddings, batch_first=True, padding_value=0)
         padded_indices = pad_sequence(indices, batch_first=True, padding_value=pad_idx)
-        return padded_embeddings, padded_indices
+        return padded_embeddings.to(device), padded_indices.to(device)
 
     train_loader = DataLoader(
         train_dataset, batch_size=BATCH_SIZE, shuffle=True, collate_fn=collate_fn
@@ -42,15 +50,15 @@ def main():
         hidden_size=200,
         num_layers=1,
         output_size=len(word2vec_model.wv),
-    )
+    ).to(device)
 
-    criterion = nn.CrossEntropyLoss(ignore_index=pad_idx)
+    criterion = nn.CrossEntropyLoss(ignore_index=pad_idx).to(device)
     optimizer = optim.Adam(model.parameters(), lr=0.001)
 
     train_losses, val_losses = [], []
     train_perplexities, val_perplexities = [], []
 
-    num_epochs = 13
+    num_epochs = 10
 
     for epoch in range(num_epochs):
         model.train()
