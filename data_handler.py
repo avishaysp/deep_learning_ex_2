@@ -12,4 +12,5 @@ def load_data(file_path):
 def load_all_data(ptb_path: Path):
     train_data = load_data(ptb_path / "ptb.train.txt")
     valid_data = load_data(ptb_path / "ptb.valid.txt")
-    return train_data, valid_data
+    test_data = load_data(ptb_path / "ptb.test.txt")
+    return train_data, valid_data, test_data
