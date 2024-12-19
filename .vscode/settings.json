@@ -1,0 +1,10 @@
+{
+    "editor.rulers": [79],
+    "python.defaultFormatter": "ms-python.black-formatter",
+    "editor.formatOnSave": true,                 // Format the file on save
+    "editor.formatOnPaste": true,                // Format code when pasted
+    "editor.autoIndent": "full",                 // Enable full auto-indentation
+    "python.linting.enabled": true,              // Ensure linting is enabled
+    "python.linting.flake8Enabled": true,        // Enable Flake8 linting
+    "editor.defaultFormatter": "ms-python.black-formatter" // Default formatter for Python
+}
